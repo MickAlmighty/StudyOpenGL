@@ -5,8 +5,11 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <stdio.h>
+#include <cstdio>
+#include <Triangle.h>
 
+
+std::vector<float> createVertexBuffer(std::vector<Vertex*>);
 // About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually. 
 // Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
 // You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
@@ -76,7 +79,7 @@ int main(int, char**)
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
-    //glfwSwapInterval(1); // Enable vsync
+    glfwSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -161,19 +164,32 @@ int main(int, char**)
 	}
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
-
-	GLfloat vertices[] = {
+	
+	GLfloat vertices1[] = {
 			-0.5f, -0.5f, 0.0f,
 			 0.5f, -0.5f, 0.0f,
 			 0.0f,  0.5f, 0.0f
 	};
+	
+	Triangle *triangle = new Triangle(vertices1);
+	std::vector<Vertex*> *allVertices = new std::vector<Vertex*>();
+	triangle->createTrianglesFromVertexAndMids(10, allVertices, triangle);
+	delete triangle;
+
+	std::vector<float> *floats = new std::vector<float>();
+	for (Vertex* element : *allVertices)
+	{
+		floats->push_back(element->getX());
+		floats->push_back(element->getY());
+		floats->push_back(element->getZ());
+	}
+	
 	GLuint VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glBindVertexArray(VAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, floats->size() * sizeof(float), floats->data(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
@@ -250,13 +266,13 @@ int main(int, char**)
 
 		//glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, allVertices->size());
         //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); zakomentowane
 
         //glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
     }
-
+	
     // Cleanup
     /*ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
