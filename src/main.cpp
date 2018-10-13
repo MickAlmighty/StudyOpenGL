@@ -7,6 +7,7 @@
 #include "imgui_impl_opengl3.h"
 #include <cstdio>
 #include <Triangle.h>
+#include "VertexManager.h"
 
 
 std::vector<float> createVertexBuffer(std::vector<Vertex*>);
@@ -172,24 +173,26 @@ int main(int, char**)
 	};
 	
 	Triangle *triangle = new Triangle(vertices1);
+	VertexManager vertex_manager = VertexManager();// = new VertexManager();
 	std::vector<Vertex*> *allVertices = new std::vector<Vertex*>();
-	triangle->createTrianglesFromVertexAndMids(10, allVertices, triangle);
+	vertex_manager.createTrianglesFromVertexAndMids(3, allVertices, triangle);
 	delete triangle;
-
-	std::vector<float> *floats = new std::vector<float>();
-	for (Vertex* element : *allVertices)
-	{
-		floats->push_back(element->getX());
-		floats->push_back(element->getY());
-		floats->push_back(element->getZ());
-	}
+	vertex_manager.createDataAndIndexArrays(allVertices);
 	
-	GLuint VBO, VAO;
+	std::vector<float> *floats2 = vertex_manager.getFloats();
+	std::vector<unsigned int> *indexArray = vertex_manager.getIndexArray();
+	std::cout << indexArray->size() << std::endl;
+	std::cout << floats2->size() << std::endl;
+	
+	GLuint VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &EBO);
 	glGenBuffers(1, &VBO);
 	glBindVertexArray(VAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexArray->size() * sizeof(unsigned int), indexArray->data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, floats->size() * sizeof(float), floats->data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, floats2->size() * sizeof(float), floats2->data(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
@@ -266,7 +269,8 @@ int main(int, char**)
 
 		//glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, allVertices->size());
+		glDrawElements(GL_TRIANGLES, indexArray->size(), GL_UNSIGNED_INT, 0);
+		//glDrawArrays(GL_TRIANGLES, 0, allVertices->size());
         //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); zakomentowane
 
         //glfwMakeContextCurrent(window);
@@ -277,7 +281,8 @@ int main(int, char**)
     /*ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();*/
-
+	delete allVertices;
+	delete triangle;
     glfwDestroyWindow(window);
     glfwTerminate();
 

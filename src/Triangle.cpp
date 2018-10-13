@@ -6,6 +6,7 @@ Triangle::Triangle(std::vector<Vertex*> *vector3): vec3(vector3)
 	mids = new std::vector<Vertex*>();
 	calculateMids();
 }
+
 Triangle::Triangle(float vertices[])
 {
 	this->vec3 = new std::vector<Vertex*>();
@@ -39,7 +40,8 @@ Triangle::Triangle(float vertices[])
 
 Triangle::~Triangle()
 {
-	
+	delete vec3;
+	delete mids;
 }
 
 void Triangle::calculateMids()
@@ -50,13 +52,13 @@ void Triangle::calculateMids()
 		{
 			if(vec3->at(i) != vec3->at(j))
 			{
-				this->mids->push_back(getMidVertices(vec3->at(i), vec3->at(j)));
+				this->mids->push_back(createMidVertex(vec3->at(i), vec3->at(j)));
 			}
 		}
 	}
 }
 
-Vertex* Triangle::getMidVertices(Vertex *x1, Vertex *x2)
+Vertex* Triangle::createMidVertex(Vertex *x1, Vertex *x2)
 {
 	float a1 = (x1->getX() + x2->getX()) / 2;
 	float y1 = (x1->getY() + x2->getY()) / 2;
@@ -64,56 +66,12 @@ Vertex* Triangle::getMidVertices(Vertex *x1, Vertex *x2)
 	return new Vertex(a1, y1, z1);
 }
 
-void Triangle::createTrianglesFromVertexAndMids(int recursionLevel, std::vector<Vertex*> *allVerticles, Triangle *n_triangle)
+std::vector<Vertex*>* Triangle::getVec3()
 {
-	if (recursionLevel > 0)
-	{
-		for (unsigned int i = 0; i < this->vec3->size(); i++)
-		{
-			if (i == 0)
-			{
-				std::vector<Vertex*> *n_vertices = new std::vector<Vertex*>();
-				n_vertices->push_back(n_triangle->vec3->at(i));
-				n_vertices->push_back(n_triangle->mids->at(0));
-				n_vertices->push_back(n_triangle->mids->at(1));
-				if(recursionLevel == 1)
-				{
-					allVerticles->push_back(n_triangle->vec3->at(i));
-					allVerticles->push_back(n_triangle->mids->at(0));
-					allVerticles->push_back(n_triangle->mids->at(1));
-				}
-				createTrianglesFromVertexAndMids(recursionLevel - 1, allVerticles, new Triangle(n_vertices));
-			}
-			if (i == 1)
-			{
-				std::vector<Vertex*> *n_vertices = new std::vector<Vertex*>();
-				n_vertices->push_back(n_triangle->vec3->at(i));
-				n_vertices->push_back(n_triangle->mids->at(0));
-				n_vertices->push_back(n_triangle->mids->at(2));
-				if(recursionLevel == 1)
-				{
-					allVerticles->push_back(n_triangle->vec3->at(i));
-					allVerticles->push_back(n_triangle->mids->at(0));
-					allVerticles->push_back(n_triangle->mids->at(2));
-				}
-				createTrianglesFromVertexAndMids(recursionLevel - 1, allVerticles, new Triangle(n_vertices));
-			}
-			if (i == 2)
-			{
-				std::vector<Vertex*> *n_vertices = new std::vector<Vertex*>();
-				n_vertices->push_back(n_triangle->vec3->at(i));
-				n_vertices->push_back(n_triangle->mids->at(1));
-				n_vertices->push_back(n_triangle->mids->at(2));
-				if(recursionLevel == 1)
-				{
-					allVerticles->push_back(n_triangle->vec3->at(i));
-					allVerticles->push_back(n_triangle->mids->at(1));
-					allVerticles->push_back(n_triangle->mids->at(2));
-				}
-				createTrianglesFromVertexAndMids(recursionLevel - 1, allVerticles, new Triangle(n_vertices));
-			}
-		}
-	}
-	
+	return vec3;
+}
+std::vector<Vertex*>* Triangle::getMids()
+{
+	return mids;
 }
 

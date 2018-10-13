@@ -8,9 +8,10 @@ private:
 	std::vector<Vertex*> *mids;
 public:
 	void Triangle::calculateMids();
-	Vertex* Triangle::getMidVertices(Vertex*, Vertex*);
+	Vertex* Triangle::createMidVertex(Vertex*, Vertex*);
 	Triangle::Triangle(std::vector<Vertex*> *v);
 	Triangle::Triangle(float[]);
 	Triangle::~Triangle();
-	void Triangle::createTrianglesFromVertexAndMids(int, std::vector<Vertex*> *, Triangle *);
+	std::vector<Vertex*>* Triangle::getVec3();
+	std::vector<Vertex*>* Triangle::getMids();
 };

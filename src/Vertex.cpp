@@ -2,20 +2,17 @@
 
 
 Vertex::Vertex(float _x, float _y, float _z) : x(_x), y(_y), z(_z) { };
-Vertex::~Vertex()
-{
-	delete this;
-}
+Vertex::~Vertex() { };
 
 float Vertex::getX()
 {
-	return this->x;
+	return x;
 }
 float Vertex::getY()
 {
-	return this->y;
+	return y;
 };
 float Vertex::getZ()
 {
-	return this->z;
+	return z;
 };

@@ -9,11 +9,15 @@ private:
 public:	
 	Vertex::Vertex(float x, float y, float z);
 	Vertex::~Vertex();
-	float getX();
-	float getY();
-	float getZ();
-	bool operator!= (Vertex const &vert) const
+	float Vertex::getX();
+	float Vertex::getY();
+	float Vertex::getZ();
+	bool operator!= (Vertex const &vertex) const
 	{
-		return x != vert.x || y != vert.y || z != vert.z;
+		return x != vertex.x || y != vertex.y || z != vertex.z;
+	}
+	bool operator== (Vertex const &vertex) const
+	{
+		return x == vertex.x && y == vertex.y && z == vertex.z;
 	}
 };
