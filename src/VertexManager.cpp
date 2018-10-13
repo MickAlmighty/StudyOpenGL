@@ -64,7 +64,9 @@ void VertexManager::createTrianglesFromVertexAndMids(int recursionLevel, std::ve
 					allVertices->push_back(n_triangle->getMids()->at(1));
 					allVertices->push_back(n_triangle->getMids()->at(2));
 				}
-				createTrianglesFromVertexAndMids(recursionLevel - 1, allVertices, new Triangle(n_vertices));
+				Triangle *tmpTriangle = new Triangle(n_vertices);
+				createTrianglesFromVertexAndMids(recursionLevel - 1, allVertices, tmpTriangle);
+				delete tmpTriangle;
 			}
 			
 		}
@@ -73,6 +75,10 @@ void VertexManager::createTrianglesFromVertexAndMids(int recursionLevel, std::ve
 
 void VertexManager::createDataAndIndexArrays(std::vector<Vertex*> *vertices)
 {
+	floats->clear();
+	indexArray->clear();
+	uniqueVertices->clear();
+	
 	for (Vertex* element : *vertices)
 	{
 		insertThisValueToTheArray(element);

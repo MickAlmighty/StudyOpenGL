@@ -103,9 +103,8 @@ int main(int, char**)
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
-    /*zakomentowane
-     *ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);*/
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Setup style
     ImGui::StyleColorsDark();
@@ -172,11 +171,10 @@ int main(int, char**)
 			 0.0f,  0.5f, 0.0f
 	};
 	
-	Triangle *triangle = new Triangle(vertices1);
+	auto *triangle = new Triangle(vertices1);
 	VertexManager vertex_manager = VertexManager();// = new VertexManager();
-	std::vector<Vertex*> *allVertices = new std::vector<Vertex*>();
-	vertex_manager.createTrianglesFromVertexAndMids(3, allVertices, triangle);
-	delete triangle;
+	auto *allVertices = new std::vector<Vertex*>();
+	vertex_manager.createTrianglesFromVertexAndMids(1, allVertices, triangle);
 	vertex_manager.createDataAndIndexArrays(allVertices);
 	
 	std::vector<float> *floats2 = vertex_manager.getFloats();
@@ -200,6 +198,7 @@ int main(int, char**)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	glUseProgram(shaderProgram);
+	int recursion_level = 0;
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -211,76 +210,64 @@ int main(int, char**)
 		glfwPollEvents();
 		
 		// Start the Dear ImGui frame
-		{//zakomentowane
-			/*ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();*/
-		}
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-		//zakomentowane 2 w dol
 		//if (show_demo_window)
 			//ImGui::ShowDemoWindow(&show_demo_window);
 
 		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 		
-		{//zakomentowane
-			//{
-			//    static float f = 0.0f;
-			//    static int counter = 0;
-
-			//    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-			//    ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-			//    ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			//    ImGui::Checkbox("Another Window", &show_another_window);
-
-			//    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			//    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-			//    if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-			//        counter++;
-			//    ImGui::SameLine();
-			//    ImGui::Text("counter = %d", counter);
-
-			//    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			//    ImGui::End();
-			//}
-		}
-        // 3. Show another simple window.
 		{
-	        //zakomentowane
-	        //if (show_another_window)
-			//{
-			//    ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-			//    ImGui::Text("Hello from another window!");
-			//    if (ImGui::Button("Close Me"))
-			//        show_another_window = false;
-			//    ImGui::End();
-			//}
+			{
+			    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+			    //ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+			    //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			    //ImGui::Checkbox("Another Window", &show_another_window);
+
+			    ImGui::SliderInt("recursion level", &recursion_level, 0, 10);            // Edit 1 float using a slider from 0.0f to 1.0f
+			    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+				if (ImGui::Button("Generate"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+				{
+					allVertices->clear();
+					vertex_manager.createTrianglesFromVertexAndMids(recursion_level, allVertices, triangle);
+					vertex_manager.createDataAndIndexArrays(allVertices);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexArray->size() * sizeof(unsigned int), indexArray->data(), GL_STATIC_DRAW);
+					glBindBuffer(GL_ARRAY_BUFFER, VBO);
+					glBufferData(GL_ARRAY_BUFFER, floats2->size() * sizeof(float), floats2->data(), GL_STATIC_DRAW);
+				}
+				ImGui::Text("Vertices count: %d", indexArray->size());
+
+			    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			    ImGui::End();
+			}
 		}
+		
         // Rendering
-        /*ImGui::Render();*/
-        //int display_w, display_h;
-        //glfwMakeContextCurrent(window);
-        //glfwGetFramebufferSize(window, &display_w, &display_h);
-        //glViewport(0, 0, display_w, display_h);
+        ImGui::Render();
+        int display_w, display_h;
+        glfwMakeContextCurrent(window);
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, indexArray->size(), GL_UNSIGNED_INT, 0);
-		//glDrawArrays(GL_TRIANGLES, 0, allVertices->size());
-        //ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); zakomentowane
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        //glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
     }
 	
     // Cleanup
-    /*ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();*/
+    ImGui::DestroyContext();
 	delete allVertices;
 	delete triangle;
     glfwDestroyWindow(window);

@@ -7,7 +7,7 @@ private:
 	float y;
 	float z;
 public:	
-	Vertex::Vertex(float x, float y, float z);
+	Vertex::Vertex(float &x, float &y, float &z);
 	Vertex::~Vertex();
 	float Vertex::getX();
 	float Vertex::getY();
