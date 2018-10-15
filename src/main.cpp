@@ -171,9 +171,9 @@ int main(int, char**)
 			 0.0f,  0.5f, 0.0f
 	};
 	
-	auto *triangle = new Triangle(vertices1);
+	auto triangle = Triangle(vertices1);
 	VertexManager vertex_manager = VertexManager();// = new VertexManager();
-	auto *allVertices = new std::vector<Vertex*>();
+	auto *allVertices = new std::vector<std::shared_ptr<Vertex>>();
 	vertex_manager.createTrianglesFromVertexAndMids(1, allVertices, triangle);
 	vertex_manager.createDataAndIndexArrays(allVertices);
 	
@@ -239,6 +239,7 @@ int main(int, char**)
 					glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexArray->size() * sizeof(unsigned int), indexArray->data(), GL_STATIC_DRAW);
 					glBindBuffer(GL_ARRAY_BUFFER, VBO);
 					glBufferData(GL_ARRAY_BUFFER, floats2->size() * sizeof(float), floats2->data(), GL_STATIC_DRAW);
+			
 				}
 				ImGui::Text("Vertices count: %d", indexArray->size());
 
@@ -269,9 +270,7 @@ int main(int, char**)
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 	delete allVertices;
-	delete triangle;
     glfwDestroyWindow(window);
     glfwTerminate();
-
     return 0;
 }
