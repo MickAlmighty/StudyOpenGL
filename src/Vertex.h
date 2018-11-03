@@ -1,4 +1,6 @@
-#pragma once
+#ifndef VERTEX_H
+#define VERTEX_H
+
 
 class Vertex
 {
@@ -7,7 +9,7 @@ private:
 	float y;
 	float z;
 public:	
-	Vertex::Vertex(float &x, float &y, float &z);
+	Vertex::Vertex(float x, float y, float z);
 	Vertex::~Vertex();
 	float Vertex::getX();
 	float Vertex::getY();
@@ -21,3 +23,4 @@ public:
 		return x == vertex.x && y == vertex.y && z == vertex.z;
 	}
 };
+#endif

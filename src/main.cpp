@@ -1,19 +1,14 @@
-// dear imgui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
-// If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan graphics context creation, etc.)
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <cstdio>
 #include <Triangle.h>
-#include "VertexManager.h"
+#include <VertexManager.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
 
-
-std::vector<float> createVertexBuffer(std::vector<Vertex*>);
-// About OpenGL function loaders: modern OpenGL doesn't have a standard header file and requires individual function pointers to be loaded manually. 
-// Helper libraries are often used for this purpose! Here we are supporting a few common ones: gl3w, glew, glad.
-// You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
@@ -27,29 +22,12 @@ std::vector<float> createVertexBuffer(std::vector<Vertex*>);
 #include <GLFW/glfw3.h> // Include glfw3.h after our OpenGL definitions
 #include <string>
 #include <iostream>
+#include "Shader.h"
 
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
-
-GLchar *vShader[] = {
-		"#version 330 core\n"
-		"layout(location = 0) in vec3 position;\n"
-		"void main()\n"
-		"{\n"
-		"gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-		"}\n"
-};
-GLchar *fShader[] = {
-	"#version 330 core\n"
-	"out vec4 color;\n"
-	"\n"
-	"void main()\n"
-	"{\n"
-	"color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-	"}\n"
-};
 
 int main(int, char**)
 {
@@ -76,7 +54,9 @@ int main(int, char**)
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+	GLfloat screenWidth = 1280;
+	GLfloat screenHeight = 720;
+	GLFWwindow* window = glfwCreateWindow(GLuint(screenWidth), GLuint(screenHeight), "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
@@ -108,80 +88,87 @@ int main(int, char**)
 
     // Setup style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'misc/fonts/README.txt' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
 
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
-
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, vShader, NULL);
-	glCompileShader(vertexShader);
-
-	GLint success;
-	GLchar infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, fShader, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+    ImVec4 clear_color = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
+	Shader ourShader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	std::vector<Tetrahedron> tetrahedrons;
 	
-	GLfloat vertices1[] = {
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.0f,  0.5f, 0.0f
-	};
-	
-	auto triangle = Triangle(vertices1);
-	VertexManager vertex_manager = VertexManager();// = new VertexManager();
-	auto *allVertices = new std::vector<std::shared_ptr<Vertex>>();
-	vertex_manager.createTrianglesFromVertexAndMids(1, allVertices, triangle);
+	//tworzenie pierwszego tetrahedronu
+	{
+		GLfloat vertices1[] = {//front
+				-0.5f, -0.5f, 0.5f,
+				 0.5f, -0.5f, 0.5f,
+				 0.0f,  0.5f, 0.0f
+		};
+		GLfloat vertices2[] = {//lewa strona
+				-0.5f, -0.5f, 0.5f,
+				 0.0f,  -0.5f, -0.5f,
+				 0.0f,  0.5f, 0.0f
+		};
+		GLfloat vertices3[] = {//prawa strona
+				0.5f, -0.5f, 0.5f,
+				0.0f,  -0.5f, -0.5f,
+				0.0f,  0.5f, 0.0f
+		};
+		GLfloat vertices4[] = {//spodek
+				-0.5f, -0.5f, 0.5f,
+				 0.5f, -0.5f, 0.5f,
+				 0.0f,  -0.5f, -0.5f
+		};
+
+
+
+		auto triangle1 = Triangle(vertices1);
+		auto triangle2 = Triangle(vertices2);
+		auto triangle3 = Triangle(vertices3);
+		auto triangle4 = Triangle(vertices4);
+
+		std::vector<Triangle> triangles;
+		triangles.push_back(triangle1);
+		triangles.push_back(triangle2);
+		triangles.push_back(triangle3);
+		triangles.push_back(triangle4);
+		Tetrahedron tetrahedron(triangles);
+
+
+		tetrahedrons.push_back(tetrahedron);
+	}
+
+	VertexManager vertex_manager = VertexManager();
+	auto *allVertices = new std::vector<Vertex>();
+	//vertex_manager.createTrianglesFromVertexAndMids(1, allVertices, triangle1);
+	std::vector<Triangle> triangles2;
+	vertex_manager.CreateTetrahedrons(1, tetrahedrons, triangles2);
+	vertex_manager.SummariseVertices(allVertices, triangles2);
 	vertex_manager.createDataAndIndexArrays(allVertices);
 	
 	std::vector<float> *floats2 = vertex_manager.getFloats();
 	std::vector<unsigned int> *indexArray = vertex_manager.getIndexArray();
-	std::cout << indexArray->size() << std::endl;
-	std::cout << floats2->size() << std::endl;
 	
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\gold.jpg", &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+
 	GLuint VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &EBO);
@@ -192,13 +179,41 @@ int main(int, char**)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, floats2->size() * sizeof(float), floats2->data(), GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	glUseProgram(shaderProgram);
-	int recursion_level = 0;
+	glm::mat4 model(1.0f);
+	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 view(1.0f);
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -2.0f));
+	glm::mat4 projection(1.0f);
+	projection = glm::perspective(glm::radians(45.0f), screenWidth / screenHeight, 0.1f, 100.0f);
+	
+	GLint modelLoc = glGetUniformLocation(ourShader.ID, "model");
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+	GLint viewLoc = glGetUniformLocation(ourShader.ID, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+	GLint projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	GLint vertexColorLocation = glGetUniformLocation(ourShader.ID, "ourColor");
+	ourShader.use();
+	
+	int recursion_level = 1;
+	float radians = 0.0f;
+	/*float x_axis = 1.0f;
+	float y_axis = 0.0f;*/
+	bool is_x_axis = false;
+	bool is_y_axis = true;
+	glEnable(GL_DEPTH_TEST);
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -218,7 +233,19 @@ int main(int, char**)
 			//ImGui::ShowDemoWindow(&show_demo_window);
 
 		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-		
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glUniform4f(vertexColorLocation, clear_color.x, clear_color.y, clear_color.z, 1.0f);
+		if(is_x_axis)
+		{
+			 model = glm::rotate(model, glm::radians(radians), glm::vec3(1.0f, 0.0f, 0.0f)); 
+		}
+		if(is_y_axis)
+		{
+			model = glm::rotate(model, glm::radians(radians), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		{
 			{
 			    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
@@ -227,23 +254,32 @@ int main(int, char**)
 			    //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 			    //ImGui::Checkbox("Another Window", &show_another_window);
 
-			    ImGui::SliderInt("recursion level", &recursion_level, 0, 10);            // Edit 1 float using a slider from 0.0f to 1.0f
+			    ImGui::SliderInt("recursion level", &recursion_level, 1, 10);  
+				ImGui::SliderFloat("rotation speed", &radians, -4.0f, 4.0f);
+				/*ImGui::SliderFloat("x-axis", &x_axis, 0.0f, 1.0f);
+				ImGui::SliderFloat("y-axis", &y_axis, 0.0f, 1.0f);*/
 			    ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+				ImGui::Checkbox("x_axis", &is_x_axis); ImGui::SameLine(150);
+				ImGui::Checkbox("y_axis", &is_y_axis);
 
 				if (ImGui::Button("Generate"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 				{
 					allVertices->clear();
-					vertex_manager.createTrianglesFromVertexAndMids(recursion_level, allVertices, triangle);
+					triangles2.clear();
+					vertex_manager.CreateTetrahedrons(recursion_level, tetrahedrons, triangles2);
+					//vertex_manager.createTetrahedron(recursion_level, allVertices, triangles);
+					//vertex_manager.createTrianglesFromVertexAndMids(recursion_level, allVertices, triangle1);
+					vertex_manager.SummariseVertices(allVertices, triangles2);
 					vertex_manager.createDataAndIndexArrays(allVertices);
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 					glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexArray->size() * sizeof(unsigned int), indexArray->data(), GL_STATIC_DRAW);
 					glBindBuffer(GL_ARRAY_BUFFER, VBO);
 					glBufferData(GL_ARRAY_BUFFER, floats2->size() * sizeof(float), floats2->data(), GL_STATIC_DRAW);
-			
 				}
 				ImGui::Text("Vertices count: %d", indexArray->size());
-
-			    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+				ImGui::Text("Floats count: %d", floats2->size() * 3/5);
+				
+				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			    ImGui::End();
 			}
 		}
@@ -254,9 +290,9 @@ int main(int, char**)
         glfwMakeContextCurrent(window);
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClearColor(0.2f, 0.3f, 0.6f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, indexArray->size(), GL_UNSIGNED_INT, 0);

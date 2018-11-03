@@ -1,19 +1,22 @@
-#pragma once
+#ifndef TRIANGLE_H
+#define TRIANGLE_H
+
 #include <vector> 
 #include "Vertex.h"
-#include <memory>
 
 class Triangle
 {
 private:
-	std::vector<std::shared_ptr<Vertex>> *vec3;
-	std::vector<std::shared_ptr<Vertex>> *mids;
+	std::vector<Vertex> vec3;
+	std::vector<Vertex> mids;
 public:
 	void Triangle::calculateMids();
-	std::shared_ptr<Vertex> Triangle::createMidVertex(std::shared_ptr<Vertex>, std::shared_ptr<Vertex> );
-	Triangle::Triangle(std::vector<std::shared_ptr<Vertex>> &v);
+	Vertex Triangle::createMidVertex(Vertex &, Vertex &);
+	Triangle::Triangle(std::vector<Vertex> v);
 	Triangle::Triangle(float[]);
+	Triangle::Triangle();
 	Triangle::~Triangle();
-	std::vector<std::shared_ptr<Vertex>>* Triangle::getVec3();
-	std::vector<std::shared_ptr<Vertex>>* Triangle::getMids();
+	std::vector<Vertex> Triangle::getVec3();
+	std::vector<Vertex> Triangle::getMids();
 };
+#endif
