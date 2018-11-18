@@ -1,12 +1,13 @@
 #version 330 core
-out vec4 color;
-in vec3 pos;
-in vec2 TexCoord;
-uniform vec4 ourColor;
-uniform sampler2D ourTexture;
+out vec4 FragColor;
 
-
+in vec2 TexCoords;
+uniform sampler2D texture_diffuse1;
+uniform bool isFromFile;
 void main()
-{
-color = texture(ourTexture, TexCoord) * ourColor;
-}
+{    
+	if(isFromFile)
+		FragColor = texture(texture_diffuse1, TexCoords);
+	else
+		FragColor = vec4(1,0,1,1);
+	}
