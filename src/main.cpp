@@ -316,15 +316,24 @@ int main()
 	// build and compile our shader zprogram
 	// ------------------------------------
 	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
-	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	//Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
 	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
 	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\chair\\Armchair Quinti Amelie.3ds");
+	
+	Mesh *mesh = new Mesh();
+	Mesh *torus = new Mesh();
+	Mesh *torus2 = new Mesh();
+	mesh->generateTorus(3, 50, 0.02f, 10.0f);
+	torus->generateTorus(3, 50, 0.02f, 3.0f);
+	torus2->generateTorus(8, 50, 2.0f, 3.0f);
+	Model* model3 = new Model(mesh);
+	Model* model4 = new Model(torus);
+	Model* model5 = new Model(torus2);
 	ourModel->SetShader(ourShader);
 	ourModel2->SetShader(ourShader);
-	Mesh *mesh = new Mesh();
-	mesh->generateTorus(3, 50, 0.02f, 10.0f);
-	Model* model3 = new Model(mesh);
 	model3->SetShader(ourShader);
+	model4->SetShader(ourShader);
+	model5->SetShader(ourShader);
 	ourShader->use();
 
 	// pass projection matrix to shader (as projection matrix rarely changes there's no need to do this per frame)
@@ -347,14 +356,25 @@ int main()
 	*transform = glm::translate(*transform, glm::vec3(10.0f, -0.5f, 0.0f)); // translate it down so it's at the center of the scene
 	*transform = glm::scale(*transform, glm::vec3(0.1f, 0.1f, 0.1f));
 
-	GraphNode root(false, ourModel);
+	GraphNode root(true, ourModel);
 	GraphNode* child = new GraphNode(true, ourModel2);
-	GraphNode* child2 = new GraphNode(false, model3);
+	GraphNode* child2 = new GraphNode(true, model3);
+	GraphNode* chairChild = new GraphNode(true, model4);
+	GraphNode* chairMoon = new GraphNode(true, model5);
 	root.SetTransform(model);
 	child->SetTransform(transform);
 	root.AddChild(child);
 	child2->SetTransform(model2);
 	root.AddChild(child2);
+	child->AddChild(chairChild);
+	chairChild->Scale(glm::vec3(10, 10, 10));
+	chairChild->Rotate(45, glm::vec3(1, 0, 0));
+	
+	chairChild->AddChild(chairMoon);
+	chairMoon->Translate(glm::vec3(3, 0, 0));
+	chairMoon->Scale(glm::vec3(0.1f, 0.1f, 0.1));
+	
+	
 
 	glm::mat4 view(1);
 	int numberOfRings = 30;
@@ -413,6 +433,8 @@ int main()
 			mesh->generateTorus(3, numberOfRings, 0.02f, 10.0f);
 		root.Rotate(1, glm::vec3(0, 1, 0));
 		child->Rotate(1, glm::vec3(1, 0, 0.2));
+		chairChild->Rotate(2, glm::vec3(0, 0, 1));
+		chairMoon->Rotate(2, glm::vec3(0, 1, 0.2));
 
 		cameraSpeed = 3.5f * deltaTime;
 		// activate shader
@@ -434,7 +456,7 @@ int main()
 		glfwPollEvents();
 	}
 	delete ourShader;
-	delete ourShader2;
+	//delete ourShader2;
 	delete ourModel;
 	delete ourModel2;
 	delete mesh;
