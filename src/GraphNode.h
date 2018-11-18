@@ -1,5 +1,4 @@
 #include <Model.h>
-#include <Transform.h>
 #include <glm/glm.hpp>
 class GraphNode
 {
@@ -60,7 +59,7 @@ public:
 	}
 	virtual void Update(float msec) 
 	{
-		*transform = glm::rotate(*transform, glm::radians(10.0f) * msec, glm::vec3(0, 1, 0));
+		//*transform = glm::rotate(*transform, glm::radians(10.0f) * msec, glm::vec3(0, 1, 0));
 		if (parent) 
 		{
 			*worldTransform = *parent->worldTransform * (*transform);
@@ -104,5 +103,14 @@ public:
 		{
 			node->Draw();
 		}
+	}
+	void Rotate(float angle, glm::vec3 axis) {
+		*transform = glm::rotate(*transform, glm::radians(angle), axis);
+	}
+	void Translate(glm::vec3 translation) {
+		*transform = glm::translate(*transform, translation);
+	}
+	void Scale(glm::vec3 scale) {
+		*transform = glm::scale(*transform, scale);
 	}
 };

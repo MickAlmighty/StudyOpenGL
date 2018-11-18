@@ -28,7 +28,7 @@ private:
 	/*  Dane modelu  */
 	glm::mat4* model;
 	vector<Texture> textures_loaded;
-	vector<Mesh> meshes;
+	vector<Mesh*> meshes;
 	string directory;
 	Shader* shader;
 	bool isFromFile;
@@ -66,7 +66,7 @@ private:
 			processNode(node->mChildren[i], scene);
 		}
 	}
-	Mesh processMesh(aiMesh *mesh, const aiScene *scene)
+	Mesh* processMesh(aiMesh *mesh, const aiScene *scene)
 	{
 		vector<Vertex> vertices;
 		vector<unsigned int> indices;
@@ -117,7 +117,7 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 
-		return Mesh(vertices, indices, textures);
+		return new Mesh(vertices, indices, textures);
 	} 
 
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName)
@@ -160,7 +160,7 @@ public:
 		model = new glm::mat4(1);
 	}
 
-	Model(Mesh mesh) 
+	Model(Mesh* mesh) 
 	{
 		isFromFile = false;
 		meshes.push_back(mesh);
@@ -171,7 +171,7 @@ public:
 	{
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{
-			meshes[i].Draw(shader, model, isFromFile);
+			meshes[i]->Draw(shader, model, isFromFile);
 		}
 	}
 

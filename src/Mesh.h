@@ -114,14 +114,14 @@ public:
 		
 	}
 
-	void generateTorus(int num_segments, int num_rings) {
+	void generateTorus(int num_segments, int num_rings, float r, float R) {
 		vector<unsigned int> indexBuffer;
-		
+		vector<float> vertBuffer;
 		int num_vertices = (num_rings + 1) * (num_segments + 1);
 
 		const float pi = 3.1415926535f;
-		const float r1 = 10.0f;
-		const float r2 = 0.05f;
+		const float r1 = R;
+		const float r2 = r;
 		for (int i = 0, index = 0; i <= num_rings; ++i) {
 			for (int j = 0; j <= num_segments; ++j, ++index) {
 				// Compute texture coordinates (surface parameters)
@@ -141,9 +141,9 @@ public:
 				float x = cos(u_angle) * (r1 + cos(v_angle) * r2);
 				float y = sin(u_angle) * (r1 + cos(v_angle) * r2);
 				float z = sin(v_angle) * r2;
-				vert.push_back(x);
-				vert.push_back(y);
-				vert.push_back(z);
+				vertBuffer.push_back(x);
+				vertBuffer.push_back(y);
+				vertBuffer.push_back(z);
 			}
 		}
 
@@ -152,23 +152,8 @@ public:
 			indexBuffer.push_back(int(i % num_vertices));
 			indexBuffer.push_back(int((i + num_segments + 1) % num_vertices));
 		}
-		int counter = 0;
-		for (float f : vert) {
-			counter++;
-			cout << " "<< f;
-			if (counter % 3 == 0)
-				cout << endl;
-			
-		}
-
-		for (float f : indices) {
-			counter++;
-			cout << " " << f;
-			if (counter % 3 == 0)
-				cout << endl;
-
-		}
-		cout << vert.size() << endl;
+		//cout << vert.size() << endl;
+		vert = vertBuffer;
 		indices = indexBuffer;
 		setupMesh2();
 	}
@@ -228,12 +213,12 @@ private:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
-		cout << "Liczba bajtów w buforze " << vert.size() * sizeof(float) << endl;
+		//cout << "Liczba bajtów w buforze " << vert.size() * sizeof(float) << endl;
 		// set the vertex attribute pointers
 		// vertex Positions
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-		cout << "Stride: " << 3 * sizeof(float) << endl;
+		//cout << "Stride: " << 3 * sizeof(float) << endl;
 
 		glBindVertexArray(0);
 	}

@@ -198,6 +198,9 @@
 //    return 0;
 //}
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
@@ -218,7 +221,10 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
-
+static void glfw_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -244,10 +250,28 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-#endif
+	
+	    // Setup window
+	    glfwSetErrorCallback(glfw_error_callback);
+	    if (!glfwInit())
+	        return 1;
+	
+	    // Decide GL+GLSL versions
+	#if __APPLE__
+	    // GL 3.2 + GLSL 150
+	    const char* glsl_version = "#version 150";
+	    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+	#else
+	    // GL 4.3 + GLSL 430
+	    const char* glsl_version = "#version 430";
+	    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+	#endif
 
 	// glfw window creation
 	// --------------------
@@ -261,9 +285,9 @@ int main()
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
-
+	glfwSwapInterval(1); // Enable vsync
 	// tell GLFW to capture our mouse
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
@@ -272,6 +296,18 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+	IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    // Setup style
+    ImGui::StyleColorsDark();
 
 	// configure global opengl state
 	// -----------------------------
@@ -285,8 +321,8 @@ int main()
 	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\chair\\Armchair Quinti Amelie.3ds");
 	ourModel->SetShader(ourShader);
 	ourModel2->SetShader(ourShader);
-	Mesh mesh;
-	mesh.generateTorus(8, 8);
+	Mesh *mesh = new Mesh();
+	mesh->generateTorus(3, 50, 0.02f, 10.0f);
 	Model* model3 = new Model(mesh);
 	model3->SetShader(ourShader);
 	ourShader->use();
@@ -304,22 +340,26 @@ int main()
 	glm::mat4* model2 = new glm::mat4(1);
 	//*model2 = glm::translate(*model2, glm::vec3(10.0f, 1.75f, 3.0f)); // translate it down so it's at the center of the scene
 	//*model2 = glm::scale(*model2, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-	//*model2 = glm::rotate(*model2, glm::radians(90.0f), glm::vec3(1, 0, 0));
+	*model2 = glm::rotate(*model2, glm::radians(90.0f), glm::vec3(1, 0, 0));
 	
 	
 	glm::mat4* transform = new glm::mat4(1);
-	*transform = glm::translate(*transform, glm::vec3(10.0f, -1.0f, 0.0f)); // translate it down so it's at the center of the scene
+	*transform = glm::translate(*transform, glm::vec3(10.0f, -0.5f, 0.0f)); // translate it down so it's at the center of the scene
 	*transform = glm::scale(*transform, glm::vec3(0.1f, 0.1f, 0.1f));
 
-	GraphNode root(true, ourModel);
+	GraphNode root(false, ourModel);
 	GraphNode* child = new GraphNode(true, ourModel2);
-	GraphNode* child2 = new GraphNode(true, model3);
+	GraphNode* child2 = new GraphNode(false, model3);
 	root.SetTransform(model);
 	child->SetTransform(transform);
 	root.AddChild(child);
-	//child2->SetTransform(model2);
+	child2->SetTransform(model2);
 	root.AddChild(child2);
 
+	glm::mat4 view(1);
+	int numberOfRings = 30;
+	int oldNumberOfRings;
+	bool isWireframeModeActive;
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	// render loop
 	// -----------
@@ -331,42 +371,81 @@ int main()
 		// input
 		// -----
 		processInput(window);
-
-		// render
-		// ------
+		oldNumberOfRings = numberOfRings;
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		{
+			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+			
+			//ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+			//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			//ImGui::Checkbox("Another Window", &show_another_window);
+			
+			ImGui::SliderInt("NumberOfRings", &numberOfRings, 3, 50);
+			//ImGui::SliderFloat("rotation speed", &radians, -40.0f, 40.0f);
+			/*ImGui::SliderFloat("x-axis", &x_axis, 0.0f, 1.0f);
+			ImGui::SliderFloat("y-axis", &y_axis, 0.0f, 1.0f);*/
+			//mGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+			//ImGui::Checkbox("x_axis", &is_x_axis); ImGui::SameLine(150);
+			ImGui::Checkbox("glPolygonMode", &isWireframeModeActive);
+			
+			if (ImGui::Button("ActivatePlygonMode"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			{
+				
+				if (isWireframeModeActive) {
+					cout << "Zmiana trybu wyswietlania " << endl;
+					glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+				}
+				else {
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					cout << "Zmiana trybu wyswietlania " << endl;
+				}
+			}
+				
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+		if(oldNumberOfRings != numberOfRings)
+			mesh->generateTorus(3, numberOfRings, 0.02f, 10.0f);
+		root.Rotate(1, glm::vec3(0, 1, 0));
+		child->Rotate(1, glm::vec3(1, 0, 0.2));
 
+		cameraSpeed = 3.5f * deltaTime;
 		// activate shader
 		ourShader->use();
 
 		// camera/view transformation
-		glm::mat4 view(1);
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 		ourShader->setMat4("view", view);
-		 // translate it down so it's at the center of the scene
-		//model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
-		//ourShader.setMat4("model", model);
 		
-		//ourModel->setDeltaTime(deltaTime);
-		//ourModel2.setDeltaTime(deltaTime);
-		//ourModel.Draw();
-		//ourModel2.Draw();
 		root.Update(deltaTime * 5);
 		root.Draw();
-		cameraSpeed = 3.5f * deltaTime;
+		ImGui::Render();
+
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
+	delete ourShader;
+	delete ourShader2;
+	delete ourModel;
+	delete ourModel2;
+	delete mesh;
 	// optional: de-allocate all resources once they've outlived their purpose:
 	// ------------------------------------------------------------------------
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
+	ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
 }
@@ -386,7 +465,13 @@ void processInput(GLFWwindow *window)
 		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, NULL);
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		glfwSetCursorPosCallback(window, mouse_callback);
+	
 }
+
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	GLfloat xpos1 = (float)xpos;
