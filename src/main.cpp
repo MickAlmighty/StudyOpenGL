@@ -319,6 +319,7 @@ int main()
 	//Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
 	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
 	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\chair\\Armchair Quinti Amelie.3ds");
+	Model* nanosuit = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
 	
 	Mesh *mesh = new Mesh();
 	Mesh *torus = new Mesh();
@@ -329,11 +330,13 @@ int main()
 	Model* model3 = new Model(mesh);
 	Model* model4 = new Model(torus);
 	Model* model5 = new Model(torus2);
+	
 	ourModel->SetShader(ourShader);
 	ourModel2->SetShader(ourShader);
 	model3->SetShader(ourShader);
 	model4->SetShader(ourShader);
 	model5->SetShader(ourShader);
+	nanosuit->SetShader(ourShader);
 	ourShader->use();
 
 	// pass projection matrix to shader (as projection matrix rarely changes there's no need to do this per frame)
@@ -347,39 +350,44 @@ int main()
 	*model = glm::scale(*model, glm::vec3(0.1f, 0.1f, 0.1f));	// it's a bit too big for our scene, so scale it down
 
 	glm::mat4* model2 = new glm::mat4(1);
-	//*model2 = glm::translate(*model2, glm::vec3(10.0f, 1.75f, 3.0f)); // translate it down so it's at the center of the scene
-	//*model2 = glm::scale(*model2, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
 	*model2 = glm::rotate(*model2, glm::radians(90.0f), glm::vec3(1, 0, 0));
 	
 	
 	glm::mat4* transform = new glm::mat4(1);
 	*transform = glm::translate(*transform, glm::vec3(10.0f, -0.5f, 0.0f)); // translate it down so it's at the center of the scene
 	*transform = glm::scale(*transform, glm::vec3(0.1f, 0.1f, 0.1f));
-
-	GraphNode root(true, ourModel);
-	GraphNode* child = new GraphNode(true, ourModel2);
-	GraphNode* child2 = new GraphNode(true, model3);
-	GraphNode* chairChild = new GraphNode(true, model4);
+	GraphNode root(true);
+	GraphNode* sun = new GraphNode(false, ourModel);
+	GraphNode* sun2 = new GraphNode(true, nanosuit);
+	GraphNode* chair = new GraphNode(true, ourModel2);
+	GraphNode* sunOrbit = new GraphNode(true, model3);
+	GraphNode* chairOrbit = new GraphNode(true, model4);
 	GraphNode* chairMoon = new GraphNode(true, model5);
-	root.SetTransform(model);
-	child->SetTransform(transform);
-	root.AddChild(child);
-	child2->SetTransform(model2);
-	root.AddChild(child2);
-	child->AddChild(chairChild);
-	chairChild->Scale(glm::vec3(10, 10, 10));
-	chairChild->Rotate(45, glm::vec3(1, 0, 0));
 	
-	chairChild->AddChild(chairMoon);
+	root.AddChild(sun);
+	root.AddChild(sun2);
+	sun->SetTransform(model);
+	sunOrbit->SetTransform(model2);
+	sun->AddChild(sunOrbit);
+	chair->SetTransform(transform);
+	sun->AddChild(chair);
+	chair->AddChild(chairOrbit);
+	chairOrbit->Scale(glm::vec3(10, 10, 10));
+	chairOrbit->Rotate(45, glm::vec3(1, 0, 0));
+	
+	chairOrbit->AddChild(chairMoon);
 	chairMoon->Translate(glm::vec3(3, 0, 0));
 	chairMoon->Scale(glm::vec3(0.1f, 0.1f, 0.1));
-	
-	
+
+
+	sun2->Scale(glm::vec3(0.15, 0.15, 0.15));
+	sun2->Translate(glm::vec3(-12, -15, -3));
+	sun2->Rotate(30, glm::vec3(0, 1, 0));
 
 	glm::mat4 view(1);
 	int numberOfRings = 30;
 	int oldNumberOfRings;
-	bool isWireframeModeActive;
+	bool isWireframeModeActive = false;
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	// render loop
 	// -----------
@@ -415,10 +423,10 @@ int main()
 			
 			if (ImGui::Button("ActivatePlygonMode"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 			{
-				
+				isWireframeModeActive = !isWireframeModeActive;
 				if (isWireframeModeActive) {
 					cout << "Zmiana trybu wyswietlania " << endl;
-					glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 				else {
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -431,9 +439,10 @@ int main()
 		}
 		if(oldNumberOfRings != numberOfRings)
 			mesh->generateTorus(3, numberOfRings, 0.02f, 10.0f);
-		root.Rotate(1, glm::vec3(0, 1, 0));
-		child->Rotate(1, glm::vec3(1, 0, 0.2));
-		chairChild->Rotate(2, glm::vec3(0, 0, 1));
+		sun->Rotate(1, glm::vec3(0, 1, 0));
+		sunOrbit->Rotate(0, glm::vec3(0, 1, 0));
+		chair->Rotate(1, glm::vec3(1, 0, 0.2));
+		chairOrbit->Rotate(2, glm::vec3(0, 0, 1));
 		chairMoon->Rotate(2, glm::vec3(0, 1, 0.2));
 
 		cameraSpeed = 3.5f * deltaTime;

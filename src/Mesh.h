@@ -124,12 +124,7 @@ public:
 		const float r2 = r;
 		for (int i = 0, index = 0; i <= num_rings; ++i) {
 			for (int j = 0; j <= num_segments; ++j, ++index) {
-				// Compute texture coordinates (surface parameters)
-				// Note that u is added to j. This creates a spiral pattern, which
-				// allows us to draw the entire torus in one triangle strip without
-				// using degenerate triangles.
-				// (Yet we still need degenerate triangles to avoid texture
-				// wrap-around)
+
 				float u = float(i) / num_rings;
 				float v = (float(j) + u) / num_segments;
 

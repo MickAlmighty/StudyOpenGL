@@ -8,21 +8,25 @@ protected:
 	glm::mat4* worldTransform;
 	glm::mat4* transform;
 	glm::mat4* transformOnStart;
+	glm::mat4* worldTransformOnStart;
 	std::vector<GraphNode*> children;
+	bool dirty;
 	bool isRotating = true;
 	float dir;
 	float x;
 	float y;
 	float z;
 public:
-	GraphNode(bool _isRotating, Model* m = NULL)
+	GraphNode(bool _isRotating = true, Model* m = nullptr)
 	{
 		isRotating = _isRotating;
 		this->model = m;
 		parent = NULL;
 		transform = new glm::mat4(1);
 		worldTransform = new glm::mat4(1);
+		worldTransformOnStart = new glm::mat4(1);
 		transformOnStart = new glm::mat4(1);
+		dirty = true;
 		const float MIN_RAND = -2.0, MAX_RAND = 2.0;
 		const float range = MAX_RAND - MIN_RAND;
 		dir = range * ((((float)rand()) / (float)RAND_MAX)) + MIN_RAND;
@@ -38,31 +42,22 @@ public:
 			delete children[i];
 		}
 	}
-	void SetTransform(glm::mat4* matrix) 
-	{ 
-		transform = matrix; 
-		*transformOnStart = *transform;
-	}
-	
-	glm::mat4* GetTransform() { return transform; }
-	
-	glm::mat4* GetWorldTransform() { return worldTransform; }
-	
-	Model* GetModel() { return model; }
-	
-	void SetModel(Model* m) { model = m; }
-	
+
 	void AddChild(GraphNode* node) 
 	{
 		children.push_back(node);
 		node->parent = this;
 	}
 	virtual void Update(float msec) 
-	{
-		//*transform = glm::rotate(*transform, glm::radians(10.0f) * msec, glm::vec3(0, 1, 0));
-		if (parent) 
+	{	
+		
+		if (parent)
 		{
-			*worldTransform = *parent->worldTransform * (*transform);
+			bool dirtySum = parent->dirty | dirty;
+			if (dirtySum) {
+				*worldTransform = *parent->worldTransform * (*transform);
+				dirty = false;
+			}
 			/*std::cout << "Graph Node" << std::endl;
 			for (int i = 0; i < 4; i++) {
 				for (int j = 0; j < 4; j++) {
@@ -71,20 +66,25 @@ public:
 				}
 				std::cout << std::endl;
 			}*/
-			if(!isRotating)
+			if (!isRotating)
 			{
-				*worldTransform = *parent->worldTransform * (*transformOnStart);
+				*worldTransformOnStart = *parent->worldTransform * (*transformOnStart);
+			}
+			
+		}
+		else //jesli jest rootem
+		{
+			if (dirty)
+			{
+				*worldTransform = *transform;
+				dirty = false;
 			}
 		}
-		else 
+		if (model) // jesli ma mesh
 		{
-			*worldTransform = *transform;
-		}
-		if (model) 
-		{
-			if (!parent && !isRotating) 
+			if (!isRotating) 
 			{
-				model->setTransform(transformOnStart);
+				model->setTransform(worldTransformOnStart);
 			}
 			else {
 				model->setTransform(worldTransform);
@@ -106,11 +106,29 @@ public:
 	}
 	void Rotate(float angle, glm::vec3 axis) {
 		*transform = glm::rotate(*transform, glm::radians(angle), axis);
+		dirty = true;
 	}
 	void Translate(glm::vec3 translation) {
 		*transform = glm::translate(*transform, translation);
+		dirty = true;
 	}
 	void Scale(glm::vec3 scale) {
 		*transform = glm::scale(*transform, scale);
+		dirty = true;
 	}
+
+	void SetTransform(glm::mat4* matrix)
+	{
+		transform = matrix;
+		*transformOnStart = *transform;
+		dirty = true;
+	}
+
+	void SetModel(Model* m) { model = m; }
+
+	glm::mat4* GetTransform() { return transform; }
+
+	glm::mat4* GetWorldTransform() { return worldTransform; }
+
+	Model* GetModel() { return model; }
 };
