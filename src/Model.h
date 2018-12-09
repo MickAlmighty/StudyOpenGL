@@ -26,45 +26,47 @@ class Model
 {
 private:
 	/*  Dane modelu  */
-	glm::mat4* model;
 	vector<Texture> textures_loaded;
 	vector<Mesh*> meshes;
 	string directory;
 	Shader* shader;
 	bool isFromFile;
-	float x;
-	float y;
-	float z;
+
 	/*  Funkcje   */
-	void loadModel(string path) 
+	void loadModel(string const &path)
 	{
+		// read file via ASSIMP
 		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-		
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+		// check for errors
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
-			cout << "ERROR::ASSIMP::" << importer.GetErrorString() << endl;
+			cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
 			return;
 		}
+		// retrieve the directory path of the filepath
 		directory = path.substr(0, path.find_last_of('\\'));
-		cout << directory << endl;
 
+		// process ASSIMP's root node recursively
 		processNode(scene->mRootNode, scene);
 	}
 
-	void processNode(aiNode *node, const aiScene *scene) 
+	void processNode(aiNode *node, const aiScene *scene)
 	{
-		// przetwórz wszystkie wêz³y siatki (jeœli istniej¹)
+		// process each mesh located at the current node
 		for (unsigned int i = 0; i < node->mNumMeshes; i++)
 		{
-			aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
+			// the node object only contains indices to index the actual objects in the scene. 
+			// the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
+			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 			meshes.push_back(processMesh(mesh, scene));
 		}
-		// nastêpnie wykonaj to samo dla ka¿dego z jego dzieci
+		// after we've processed all of the meshes (if any) we then recursively process each of the children nodes
 		for (unsigned int i = 0; i < node->mNumChildren; i++)
 		{
 			processNode(node->mChildren[i], scene);
 		}
+
 	}
 	Mesh* processMesh(aiMesh *mesh, const aiScene *scene)
 	{
@@ -81,12 +83,12 @@ private:
 			vector.y = mesh->mVertices[i].y;
 			vector.z = mesh->mVertices[i].z;
 			vertex.Position = vector;
-			vertices.push_back(vertex);
-
-			vector.x = mesh->mNormals[i].x;
-			vector.y = mesh->mNormals[i].y;
-			vector.z = mesh->mNormals[i].z;
-			vertex.Normal = vector;
+			
+			glm::vec3 normalVec;
+			normalVec.x = mesh->mNormals[i].x;
+			normalVec.y = mesh->mNormals[i].y;
+			normalVec.z = mesh->mNormals[i].z;
+			vertex.Normal = normalVec;
 			if (mesh->mTextureCoords[0]) // czy siatka zawiera wspó³rzêdne tekstury?
 			{
 				glm::vec2 vec;
@@ -96,6 +98,7 @@ private:
 			}
 			else
 				vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+			vertices.push_back(vertex);
 		}
 
 		// przetwórz indeksy
@@ -150,24 +153,23 @@ private:
 		return textures;
 	}
 public:
-	void setTransform(glm::mat4* matrix) { model = matrix; }
 	void SetShader(Shader* s) { shader = s; }
 	/*  Funkcje   */
 	Model(char *path)
 	{
 		isFromFile = true;
 		loadModel(path);
-		model = new glm::mat4(1);
 	}
-
+	Model() {
+		isFromFile = false;
+	}
 	Model(Mesh* mesh) 
 	{
 		isFromFile = false;
 		meshes.push_back(mesh);
-		model = new glm::mat4(1);
 	}
 
-	void Draw()
+	void Draw(glm::mat4 &model)
 	{
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{

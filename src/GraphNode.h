@@ -5,10 +5,10 @@ class GraphNode
 protected:
 	GraphNode* parent;
 	Model* model;
-	glm::mat4* worldTransform;
-	glm::mat4* transform;
-	glm::mat4* transformOnStart;
-	glm::mat4* worldTransformOnStart;
+	glm::mat4 worldTransform;
+	glm::mat4 transform;
+	glm::mat4 transformOnStart;
+	glm::mat4 worldTransformOnStart;
 	std::vector<GraphNode*> children;
 	bool dirty;
 	bool isRotating = true;
@@ -22,10 +22,10 @@ public:
 		isRotating = _isRotating;
 		this->model = m;
 		parent = NULL;
-		transform = new glm::mat4(1);
-		worldTransform = new glm::mat4(1);
-		worldTransformOnStart = new glm::mat4(1);
-		transformOnStart = new glm::mat4(1);
+		transform = glm::mat4(1);
+		worldTransform = glm::mat4(1);
+		worldTransformOnStart = glm::mat4(1);
+		transformOnStart = glm::mat4(1);
 		dirty = true;
 		const float MIN_RAND = -2.0, MAX_RAND = 2.0;
 		const float range = MAX_RAND - MIN_RAND;
@@ -36,8 +36,6 @@ public:
 	}
 	~GraphNode(void) 
 	{
-		delete transform;
-		delete worldTransform;
 		for (unsigned int i = 0; i < children.size(); ++i) {
 			delete children[i];
 		}
@@ -55,7 +53,7 @@ public:
 		{
 			bool dirtySum = parent->dirty | dirty;
 			if (dirtySum) {
-				*worldTransform = *parent->worldTransform * (*transform);
+				worldTransform = parent->worldTransform * transform;
 				dirty = false;
 			}
 			/*std::cout << "Graph Node" << std::endl;
@@ -66,29 +64,25 @@ public:
 				}
 				std::cout << std::endl;
 			}*/
-			if (!isRotating)
+			/*if (!isRotating)
 			{
-				*worldTransformOnStart = *parent->worldTransform * (*transformOnStart);
-			}
+				worldTransformOnStart = parent->worldTransform * transformOnStart;
+			}*/
 			
 		}
 		else //jesli jest rootem
 		{
-			if (dirty)
-			{
-				*worldTransform = *transform;
-				dirty = false;
-			}
+				worldTransform = transform;
 		}
 		if (model) // jesli ma mesh
 		{
-			if (!isRotating) 
+			/*if (!isRotating) 
 			{
 				model->setTransform(worldTransformOnStart);
 			}
 			else {
 				model->setTransform(worldTransform);
-			}
+			}*/
 		}
 		for (GraphNode* node : children) 
 		{
@@ -97,7 +91,7 @@ public:
 	}
 	virtual void Draw() 
 	{
-		if (model) { model->Draw(); }
+		if (model) { model->Draw(worldTransform); }
 
 		for (GraphNode* node : children)
 		{
@@ -105,30 +99,35 @@ public:
 		}
 	}
 	void Rotate(float angle, glm::vec3 axis) {
-		*transform = glm::rotate(*transform, glm::radians(angle), axis);
+		transform = glm::rotate(transform, glm::radians(angle), axis);
 		dirty = true;
 	}
 	void Translate(glm::vec3 translation) {
-		*transform = glm::translate(*transform, translation);
+		transform = glm::translate(transform, translation);
 		dirty = true;
 	}
 	void Scale(glm::vec3 scale) {
-		*transform = glm::scale(*transform, scale);
+		transform = glm::scale(transform, scale);
+		dirty = true;
+	}
+	void setPosition(float x, float y, float z) {
+		transform[3][0] = x;
+		transform[3][1] = y;
+		transform[3][2] = z;
 		dirty = true;
 	}
 
-	void SetTransform(glm::mat4* matrix)
+	glm::vec3 getPosition() 
 	{
-		transform = matrix;
-		*transformOnStart = *transform;
-		dirty = true;
+		glm::vec3 position = glm::vec3(worldTransform[3]);
+		return position;
 	}
-
+	
 	void SetModel(Model* m) { model = m; }
 
-	glm::mat4* GetTransform() { return transform; }
+	glm::mat4 GetTransform() { return transform; }
 
-	glm::mat4* GetWorldTransform() { return worldTransform; }
+	glm::mat4 GetWorldTransform() { return worldTransform; }
 
 	Model* GetModel() { return model; }
 };

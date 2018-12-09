@@ -33,7 +33,6 @@ struct Texture {
 
 class Mesh {
 public:
-	GLfloat deltaTime;
 	/*  Mesh Data  */
 	vector<float> vert;
 	vector<Vertex> vertices;
@@ -58,7 +57,7 @@ public:
 
 
 	// render the mesh
-	void Draw(Shader* shader, glm::mat4 *model, bool &isFromFile)
+	void Draw(Shader* shader, glm::mat4 &model, bool &isFromFile)
 	{
 		// bind appropriate textures
 		unsigned int diffuseNr = 1;
@@ -69,9 +68,10 @@ public:
 			cout << vert.Position.x << " "<< vert.Position.y << " "<< vert.Position.y << endl;
 		}*/
 		shader->use();
-		
+		/*glm::vec3 lightPosition = glm::vec3(0, 1, 0);
+		shader->setVec3("lightPos", lightPosition);*/
 		shader->setBool("isFromFile", isFromFile);
-		shader->setMat4("model", *model);
+		shader->setMat4("model", model);
 		for (unsigned int i = 0; i < textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
