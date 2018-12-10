@@ -5,10 +5,14 @@ in vec3 FragPos;
 in vec3 Normal;
 
 uniform sampler2D texture_diffuse1;
-// parametry materiałowe
+uniform samplerCube skybox;
+
 uniform float metallic;
 uniform float roughness;
 uniform float ao;
+uniform vec3 camPos;
+uniform float reflectionStrength;
+uniform float refraction;
 
 // światła
 struct PointLight {
@@ -33,7 +37,6 @@ uniform PointLight pointLight;
 uniform DirLight dirLight;
 uniform SpotLight spotLight[2];
 
-uniform vec3 camPos;
 const float PI = 3.14159265359;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness);
@@ -43,18 +46,49 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0);
 vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V);
 vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V);
 vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light);
+vec3 calculateReflection(vec3 N, vec3 I);
+vec3 calculateRefraction(vec3 N, vec3 I);
+
 void main()
 {
     vec3 albedo  = vec3(texture(texture_diffuse1, TexCoords));
     vec3 N = normalize(Normal);
     vec3 V = normalize(camPos - FragPos);
-    
+    vec3 I = normalize(FragPos - camPos);
+
     vec3 color = vec3(0);
     color += calculatePointLight(albedo, N, V);
     color += calculateDirLight(albedo, N, V);
     for(int i = 0; i < 2; i++)
         color += calculateSpotLight(albedo, N, V, spotLight[i]);
+    color += calculateReflection(N, I);
+    color += calculateRefraction(N, I);
+    
+    //korekcja gamma
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2)); 
+    //wynikowy kolor fragmentu
     FragColor = vec4(color, 1.0);
+}
+
+vec3 calculateReflection(vec3 N, vec3 I)
+{
+    
+    vec3 R = reflect(I, N);
+    vec3 skyboxReflect = texture(skybox, R).rgb * reflectionStrength;
+    return skyboxReflect;
+}
+
+vec3 calculateRefraction(vec3 N, vec3 I)
+{
+    float ratio = 1.00 / refraction;
+    vec3 R = refract(I, N, ratio);
+    vec3 skyboxRefract;
+    if(refraction != 0.0f)
+        skyboxRefract = texture(skybox, R).rgb;
+    else
+        skyboxRefract = vec3(0);
+    return skyboxRefract;
 }
 vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light)
 {
@@ -98,8 +132,7 @@ vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light)
     float epsilon = (light.cutOff - light.outerCutOff);
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
     color *= intensity;
-    color = color / (color + vec3(1.0));
-    return color = pow(color, vec3(1.0/2.2)); 
+    return color;
 }
 
 vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
@@ -137,9 +170,7 @@ vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
-
-    color = color / (color + vec3(1.0));
-    return color = pow(color, vec3(1.0/2.2)); 
+    return color;
 }
 
 vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V)
@@ -175,9 +206,7 @@ vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V)
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
-
-    color = color / (color + vec3(1.0));
-    return color = pow(color, vec3(1.0/2.2)); 
+    return color; 
 }
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)

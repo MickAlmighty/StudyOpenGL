@@ -54,7 +54,12 @@ public:
 	{
 		//setupMesh2();
 	}
-
+	~Mesh() {
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &VAO);
+		glDeleteBuffers(1, &VBO);
+		glDeleteBuffers(1, &EBO);
+	}
 
 	// render the mesh
 	void Draw(Shader* shader, glm::mat4 &model, bool &isFromFile)

@@ -23,6 +23,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+unsigned int loadCubemap(vector<std::string> faces);
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -44,6 +45,61 @@ bool firstMouse = true;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 GLfloat lastX = SCR_WIDTH / 2.0f;
 GLfloat lastY = SCR_HEIGHT / 2.0f;
+
+vector<std::string> faces
+{
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\right.jpg",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\left.jpg",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\top.jpg",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\bottom.jpg",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\front.jpg",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\back.jpg"
+};
+//
+float skyboxVertices[] = {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
 
 int main()
 {
@@ -123,7 +179,8 @@ int main()
 	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
 	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
 	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader2.fs");
-	
+	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.frag");
+	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
 	bool PBR = true;
 
 	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
@@ -133,7 +190,8 @@ int main()
 	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\lightBox\\LightBox.fbx");
 	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\lightBox\\LightBox.fbx");
 	Model* grass = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\Rockwall.fbx");
-	
+	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\rock\\rock.obj");
+
 	ourModel->SetShader(ourShader);
 	ourModel2->SetShader(ourShader);
 	nanosuit->SetShader(ourShader);
@@ -141,6 +199,7 @@ int main()
 	latarka->SetShader(ourShader2);
 	grass->SetShader(ourShader);
 	latarka2->SetShader(ourShader2);
+	rock->SetShader(instantiateShader);
 	GraphNode root(true);
 	GraphNode* lightB = new GraphNode(true, lightBox);
 	GraphNode* spotLight = new GraphNode(true, latarka);
@@ -171,14 +230,84 @@ int main()
 	sun2->Rotate(30, glm::vec3(0, 1, 0));
 	floor->Translate(glm::vec3(0, -2, 0));
 	floor->Scale(glm::vec3(0.01f, 0.01f, 0.01f));
+	
+	//skaly
+	unsigned int amount = 1000;
+	glm::mat4* modelMatrices;
+	modelMatrices = new glm::mat4[amount];
+	srand((unsigned int)glfwGetTime()); // initialize random seed	
+	float radius = 5.0;
+	float offset = 1.25f;
+	for (unsigned int i = 0; i < amount; i++)
+	{
+		glm::mat4 model(1);
+		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+		float angle = (float)i / (float)amount * 360.0f;
+		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float x = sin(angle) * radius + displacement;
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float z = cos(angle) * radius + displacement;
+		model = glm::translate(model, glm::vec3(x, y, z));
 
+		// 2. scale: Scale between 0.05 and 0.25f
+		float scale = (rand() % 20) / 100.0f + 0.05f;
+		model = glm::scale(model, glm::vec3(scale));
+
+		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+		float rotAngle = (float)(rand() % 360);
+		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+		// 4. now add to list of matrices
+		modelMatrices[i] = model;
+	}
+	/*for (int i = 0; i < amount; i++) {
+		for(int j = 0; j < 4; j++)
+			for (int k = 0; k < 4; k++) {
+				glm::mat4 mat = modelMatrices[i];
+				cout << mat[j][k] << endl;
+			}
+	}*/
+	// configure instanced array
+	// -------------------------
+	unsigned int buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	// set transformation matrices as an instance vertex attribute (with divisor 1)
+	// note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
+	// normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
+	// -----------------------------------------------------------------------------------------------------------------------------------
+	for (unsigned int i = 0; i < rock->meshes.size(); i++)
+	{
+		unsigned int VAO = rock->meshes[i]->VAO;
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(3, 1);
+		glVertexAttribDivisor(4, 1);
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+
+		glBindVertexArray(0);
+	}
 
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
 	bool isWireframeModeActive = false;
 	float x_axis = 1.0f;
-	float y_axis = 0.0f;
-	float metallines = 0.5f, roughness = 0.1f, ao = 0.05f;
+	float y_axis = -1.0f;
+	float metallines = 0.5f, roughness = 0.1f, ao = 0.2f;
 	glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
 	glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
 	glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
@@ -187,6 +316,19 @@ int main()
 	float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
 	glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
 	glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
+	float reflectionStrength = 0.0f, refraction = 0.0f;
+
+	unsigned int cubemapTexture = loadCubemap(faces);
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	skyBoxShader->use();
+	skyBoxShader->setInt("skybox", 0);
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	// render loop
@@ -213,6 +355,8 @@ int main()
 			ImGui::ColorEdit3("Ambient Light", (float*)&lightAmbient); // Edit 3 floats representing a color
 			ImGui::ColorEdit3("Diffuse Light", (float*)&lightDiffuse);
 			ImGui::ColorEdit3("Specular Light", (float*)&lightSpecular);
+			ImGui::SliderFloat("Reflection", &reflectionStrength, 0.0f, 1.0f);
+			ImGui::SliderFloat("Refraction", &refraction, 0.0f, 4.0f);
 			ImGui::Text("DirLight light direction");
 			ImGui::SliderFloat("x-direction", &lightDirection.x, -1.0f, 1.0f);
 			ImGui::SliderFloat("y-direction", &lightDirection.y, 0.0f, 1.0f);
@@ -281,6 +425,8 @@ int main()
 			ourShader->setFloat("ao", ao);
 			ourShader->setFloat("metallic", metallines);
 			ourShader->setFloat("roughness", roughness);
+			ourShader->setFloat("reflectionStrength", reflectionStrength);
+			ourShader->setFloat("refraction", refraction);
 
 			ourShader->setVec3("pointLight.color", lightDiffuse);
 			ourShader->setVec3("pointLight.position", lightPosition);
@@ -339,16 +485,74 @@ int main()
 		ourShader->setFloat("spotLight[1].quadratic", 0.032f);
 		}
 
+		
+
 		ourShader2->use();
 		ourShader2->setMat4("view", view);
 		ourShader2->setMat4("projection", projection);
 		ourShader2->setVec3("lightColor", lightDiffuse);
-		
 
+
+		instantiateShader->use();
+		instantiateShader->setMat4("view", view);
+		instantiateShader->setMat4("projection", projection);
+		instantiateShader->setInt("texture_diffuse1", 0);
+		if (PBR) {
+			ourShader->setVec3("camPos", camera.Position);
+
+			instantiateShader->setFloat("ao", ao);
+			instantiateShader->setFloat("metallic", metallines);
+			instantiateShader->setFloat("roughness", roughness);
+			instantiateShader->setFloat("reflectionStrength", reflectionStrength);
+			instantiateShader->setFloat("refraction", refraction);
+
+			instantiateShader->setVec3("pointLight.color", lightDiffuse);
+			instantiateShader->setVec3("pointLight.position", lightPosition);
+
+			instantiateShader->setVec3("dirLight.direction", lightDirection);
+			instantiateShader->setVec3("dirLight.color", lightAmbient);
+			instantiateShader->setFloat("dirLight.lightStrength", 0.05f);
+
+			instantiateShader->setVec3("spotLight[0].position", spotLightPosition);
+			instantiateShader->setVec3("spotLight[0].direction", spotLightDirection);
+			instantiateShader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
+			instantiateShader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(10.0f)));
+			instantiateShader->setVec3("spotLight[0].color", 1.0f, 0.0f, 0.0f);
+
+			instantiateShader->setVec3("spotLight[1].position", spotLightPosition1);
+			instantiateShader->setVec3("spotLight[1].direction", spotLightDirection1);
+			instantiateShader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
+			instantiateShader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
+			instantiateShader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
+
+		}
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+		for (unsigned int i = 0; i < rock->meshes.size(); i++)
+		{
+			glBindVertexArray(rock->meshes[i]->VAO);
+			glDrawElementsInstanced(GL_TRIANGLES, rock->meshes[i]->indices.size(), GL_UNSIGNED_INT, 0, amount);
+			glBindVertexArray(0);
+		}
+
+
+		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+		skyBoxShader->use();
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+		skyBoxShader->setMat4("view", view);
+		skyBoxShader->setMat4("projection", projection);
+		// skybox cube
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS); // set depth function back to default
 		/*cout << camera.Position.x << " " << camera.Position.y<< " "<< camera.Position.z <<endl;
 		cout << camera.Front.x << " " << camera.Front.y << " " << camera.Front.z << endl;*/
 		root.Update(deltaTime * 5);
 		root.Draw();
+
 		ImGui::Render();
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -358,10 +562,14 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVAO);
+	glDeleteBuffers(1, &buffer);
 	delete ourShader;
 	delete ourShader2;
-	delete ourModel;
-	delete ourModel2;
+	//delete ourModel;
+	//delete ourModel2;
+	root.~GraphNode();
 	//delete mesh;
 	// optional: de-allocate all resources once they've outlived their purpose:
 	// ------------------------------------------------------------------------
@@ -430,4 +638,36 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	// make sure the viewport matches the new window dimensions; note that width and 
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+unsigned int loadCubemap(vector<std::string> faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
 }

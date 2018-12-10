@@ -37,6 +37,7 @@ public:
 	~GraphNode(void) 
 	{
 		for (unsigned int i = 0; i < children.size(); ++i) {
+			if (model) delete model;
 			delete children[i];
 		}
 	}

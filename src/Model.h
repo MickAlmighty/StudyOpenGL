@@ -22,12 +22,9 @@
 #include <Transform.h>
 using namespace std;
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
-class Model
-{
+class Model{
 private:
 	/*  Dane modelu  */
-	vector<Texture> textures_loaded;
-	vector<Mesh*> meshes;
 	string directory;
 	Shader* shader;
 	bool isFromFile;
@@ -153,6 +150,8 @@ private:
 		return textures;
 	}
 public:
+	vector<Mesh*> meshes;
+	vector<Texture> textures_loaded;
 	void SetShader(Shader* s) { shader = s; }
 	/*  Funkcje   */
 	Model(char *path)
@@ -167,6 +166,11 @@ public:
 	{
 		isFromFile = false;
 		meshes.push_back(mesh);
+	}
+	~Model() {
+		for (Mesh* mesh : meshes) {
+			delete mesh;
+		}
 	}
 
 	void Draw(glm::mat4 &model)
