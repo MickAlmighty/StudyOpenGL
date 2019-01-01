@@ -50,12 +50,12 @@ GLfloat lastY = SCR_HEIGHT / 2.0f;
 
 vector<std::string> faces
 {
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4X+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4X-.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Y+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Y-.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Z+.png",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Z-.png"
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4X+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4X-.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Y+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Y-.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Z+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\cubemaps\\galaxy\\skybox4Z-.png"
 };
 //
 float skyboxVertices[] = {
@@ -196,30 +196,30 @@ int main()
 	srand(static_cast <unsigned> (time(0)));
 	// build and compile our shader zprogram
 	// ------------------------------------
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
-	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shaderPBR.frag");
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	
 	//Poni¿ej shadery z obliczeniami w vertex shaderze
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\PBRshader.frag");
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.frag");
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\PBRshader.frag");
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.frag");
 
-	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader2.fs");
-	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.frag");
-	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
+	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader2.fs");
+	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\skybox.frag");
+	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shaderPBR.frag");
 	
-	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
 	
-	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
-	bool PBR = false;
+	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\shaders\\shader.fs");
+	bool PBR = true;
 
-	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
-	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\chair\\Armchair Quinti Amelie.3ds");
-	Model* nanosuit = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
-	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\lightBox\\LightBox.fbx");
-	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\lightBox\\LightBox.fbx");
-	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\lightBox\\LightBox.fbx");
-	Model* grass = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\Rockwall.fbx");
-	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\rock\\rock.obj");
+	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\nanosuit\\nanosuit.obj");
+	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\chair\\Armchair Quinti Amelie.3ds");
+	Model* nanosuit = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\nanosuit\\nanosuit.obj");
+	Model* lightBox = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
+	Model* latarka = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
+	Model* latarka2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\lightBox\\LightBox.fbx");
+	Model* grass = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\rockwall\\Rockwall.fbx");
+	Model* rock = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\res\\models\\rock\\rock.obj");
 
 	ourModel->SetShader(ourShader);
 	ourModel2->SetShader(ourShader);
