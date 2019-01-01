@@ -24,6 +24,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadCubemap(vector<std::string> faces);
+void setPBRShader(Shader *shader);
+void setPhongShader(Shader *shader);
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -48,12 +50,12 @@ GLfloat lastY = SCR_HEIGHT / 2.0f;
 
 vector<std::string> faces
 {
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\right.jpg",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\left.jpg",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\top.jpg",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\bottom.jpg",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\front.jpg",
-	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\back.jpg"
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4X+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4X-.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Y+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Y-.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Z+.png",
+	"C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\src\\Debug\\galaxy\\skybox4Z-.png"
 };
 //
 float skyboxVertices[] = {
@@ -100,6 +102,24 @@ float skyboxVertices[] = {
 	-1.0f, -1.0f,  1.0f,
 	 1.0f, -1.0f,  1.0f
 };
+
+bool isWireframeModeActive = false;
+float x_axis = 1.0f;
+float y_axis = -1.0f;
+float metallines = 0.5f, roughness = 0.1f, ao = 0.2f;
+glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
+glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
+glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
+glm::vec3 lightDirection(0.0f, 1.0f, 0.0f);
+float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
+float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
+glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
+glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
+float reflectionStrength = 0.0f, refraction = 0.0f, dirLightStrenght = 0.05f;
+bool dirLightEnabled = true, spotLightEnabled = true, spotLightEnabled1 = true, pointLightEnabled = true;
+glm::vec3 lightPosition;
+glm::vec3 spotLightPosition;
+glm::vec3 spotLightPosition1;
 
 int main()
 {
@@ -176,12 +196,21 @@ int main()
 	srand(static_cast <unsigned> (time(0)));
 	// build and compile our shader zprogram
 	// ------------------------------------
-	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
-	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
+	Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	
+	//Poni¿ej shadery z obliczeniami w vertex shaderze
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\PBRshader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\PBRshader.frag");
+	//Shader* ourShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.frag");
+
 	Shader* ourShader2 = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.vs", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader2.fs");
 	Shader* skyBoxShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\skybox.frag");
-	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
-	bool PBR = true;
+	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shaderPBR.frag");
+	
+	Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\instantiateShader.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	
+	//Shader* instantiateShader = new Shader("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\gouraud.vert", "C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\src\\shader.fs");
+	bool PBR = false;
 
 	Model* ourModel = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\nanosuit\\nanosuit.obj");
 	Model* ourModel2 = new Model("C:\\Semestr5\\PAG\\openGL\\MyOpenGl\\Build\\Debug\\chair\\Armchair Quinti Amelie.3ds");
@@ -304,20 +333,7 @@ int main()
 
 	glm::mat4 view(1);
 	glm::mat4 projection(1);
-	bool isWireframeModeActive = false;
-	float x_axis = 1.0f;
-	float y_axis = -1.0f;
-	float metallines = 0.5f, roughness = 0.1f, ao = 0.2f;
-	glm::vec3 lightAmbient(0.2f, 0.2f, 0.8f);
-	glm::vec3 lightDiffuse(0.5f, 0.5f, 0.5f);
-	glm::vec3 lightSpecular(1.0f, 1.0f, 1.0f);
-	glm::vec3 lightDirection(0.0f, 1.0f, 0.0f);
-	float slPosX = -1.3f, slPosY = -0.84f, slPosZ = 0.84f;
-	float slPosX1 = 1.485f, slPosY1 = -0.89f, slPosZ1 = 1.683f;
-	glm::vec3 spotLightDirection(0.5f, 0.02f, -0.34f);
-	glm::vec3 spotLightDirection1(-0.89f, -0.792f, -1.683f);
-	float reflectionStrength = 0.0f, refraction = 0.0f;
-
+	
 	unsigned int cubemapTexture = loadCubemap(faces);
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -361,6 +377,7 @@ int main()
 			ImGui::SliderFloat("x-direction", &lightDirection.x, -1.0f, 1.0f);
 			ImGui::SliderFloat("y-direction", &lightDirection.y, 0.0f, 1.0f);
 			ImGui::SliderFloat("z-direction", &lightDirection.z, -1.0f, 1.0f);
+			ImGui::SliderFloat("dirLightStrenght", &dirLightStrenght, 0.0f, 1.0f);
 			ImGui::Text("Pozycja reflektora_1");
 			ImGui::SliderFloat("pos_x", &slPosX, -10.0f, 10.0f);
 			ImGui::SliderFloat("pos_y", &slPosY, -10.0f, 10.0f);
@@ -378,7 +395,10 @@ int main()
 			ImGui::SliderFloat("dirY1", &spotLightDirection1.y, -10.0f, 10.0f);
 			ImGui::SliderFloat("dirZ1", &spotLightDirection1.z, -10.0f, 10.0f);
 			ImGui::Checkbox("glPolygonMode", &isWireframeModeActive);
-			
+			ImGui::Checkbox("pointLight", &pointLightEnabled);
+			ImGui::Checkbox("spotlight1", &spotLightEnabled);
+			ImGui::Checkbox("spotLight2", &spotLightEnabled1);
+			ImGui::Checkbox("dirLight", &dirLightEnabled);
 			if (ImGui::Button("ActivatePlygonMode"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 			{
 				isWireframeModeActive = !isWireframeModeActive;
@@ -408,124 +428,37 @@ int main()
 		lightB->setPosition(x_axis, y_axis, 0);
 		spotLight->setPosition(slPosX, slPosY, slPosZ);
 		spotLight2->setPosition(slPosX1, slPosY1, slPosZ1);
-		ourShader->use();
+		
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
-		glm::vec3 lightPosition = lightB->getPosition();
-		glm::vec3 spotLightPosition = spotLight->getPosition();
-		glm::vec3 spotLightPosition1 = spotLight2->getPosition();
+		lightPosition = lightB->getPosition();
+		spotLightPosition = spotLight->getPosition();
+		spotLightPosition1 = spotLight2->getPosition();
 
+		ourShader->use();
 		ourShader->setMat4("view", view);
 		ourShader->setMat4("projection", projection);
-
-		if (PBR) {
-			ourShader->setVec3("camPos", camera.Position);
-
-			ourShader->setFloat("ao", ao);
-			ourShader->setFloat("metallic", metallines);
-			ourShader->setFloat("roughness", roughness);
-			ourShader->setFloat("reflectionStrength", reflectionStrength);
-			ourShader->setFloat("refraction", refraction);
-
-			ourShader->setVec3("pointLight.color", lightDiffuse);
-			ourShader->setVec3("pointLight.position", lightPosition);
-			
-			ourShader->setVec3("dirLight.direction", lightDirection);
-			ourShader->setVec3("dirLight.color", lightAmbient);
-			ourShader->setFloat("dirLight.lightStrength", 0.05f);
-
-			ourShader->setVec3("spotLight[0].position", spotLightPosition);
-			ourShader->setVec3("spotLight[0].direction", spotLightDirection);
-			ourShader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
-			ourShader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(10.0f)));
-			ourShader->setVec3("spotLight[0].color", 1.0f, 0.0f, 0.0f);
-
-			ourShader->setVec3("spotLight[1].position", spotLightPosition1);
-			ourShader->setVec3("spotLight[1].direction", spotLightDirection1);
-			ourShader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
-			ourShader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
-			ourShader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
-
-		}
-		else {
-		ourShader->setVec3("dirLight.ambient", lightAmbient);
-		ourShader->setVec3("dirLight.diffuse", lightDiffuse); // przyciemnij nieco œwiat³o, aby pasowa³o do sceny
-		ourShader->setVec3("dirLight.specular", lightSpecular);
-		ourShader->setVec3("dirLight.direction", -lightDirection);
-
-		ourShader->setVec3("pointLight.position", lightPosition);
-		ourShader->setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
-		ourShader->setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
-		ourShader->setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
-		ourShader->setFloat("pointLight.constant", 1.0f);
-		ourShader->setFloat("pointLight.linear", 0.09f);
-		ourShader->setFloat("pointLight.quadratic", 0.032f);
-
-		ourShader->setVec3("spotLight[0].position", spotLightPosition);
-		ourShader->setVec3("spotLight[0].direction", spotLightDirection);
-		ourShader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(12.0f)));
-		ourShader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
-		ourShader->setVec3("spotLight[0].ambient", 0.05f, 0.05f, 0.05f);
-		ourShader->setVec3("spotLight[0].diffuse", 0.8f, 0.0f, 0.0f);
-		ourShader->setVec3("spotLight[0].specular", 1.0f, 1.0f, 1.0f);
-		ourShader->setFloat("spotLight[0].constant", 1.0f);
-		ourShader->setFloat("spotLight[0].linear", 0.09f);
-		ourShader->setFloat("spotLight[0].quadratic", 0.032f);
-
-		ourShader->setVec3("spotLight[1].position", spotLightPosition1);
-		ourShader->setVec3("spotLight[1].direction", spotLightDirection1);
-		ourShader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
-		ourShader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
-		ourShader->setVec3("spotLight[1].ambient", 0.05f, 0.05f, 0.05f);
-		ourShader->setVec3("spotLight[1].diffuse", 0.0f, 0.8f, 0.0f);
-		ourShader->setVec3("spotLight[1].specular", 1.0f, 1.0f, 1.0f);
-		ourShader->setFloat("spotLight[1].constant", 1.0f);
-		ourShader->setFloat("spotLight[1].linear", 0.09f);
-		ourShader->setFloat("spotLight[1].quadratic", 0.032f);
-		}
-
-		
 
 		ourShader2->use();
 		ourShader2->setMat4("view", view);
 		ourShader2->setMat4("projection", projection);
 		ourShader2->setVec3("lightColor", lightDiffuse);
 
-
 		instantiateShader->use();
 		instantiateShader->setMat4("view", view);
 		instantiateShader->setMat4("projection", projection);
 		instantiateShader->setInt("texture_diffuse1", 0);
+		
 		if (PBR) {
-			ourShader->setVec3("camPos", camera.Position);
-
-			instantiateShader->setFloat("ao", ao);
-			instantiateShader->setFloat("metallic", metallines);
-			instantiateShader->setFloat("roughness", roughness);
-			instantiateShader->setFloat("reflectionStrength", reflectionStrength);
-			instantiateShader->setFloat("refraction", refraction);
-
-			instantiateShader->setVec3("pointLight.color", lightDiffuse);
-			instantiateShader->setVec3("pointLight.position", lightPosition);
-
-			instantiateShader->setVec3("dirLight.direction", lightDirection);
-			instantiateShader->setVec3("dirLight.color", lightAmbient);
-			instantiateShader->setFloat("dirLight.lightStrength", 0.05f);
-
-			instantiateShader->setVec3("spotLight[0].position", spotLightPosition);
-			instantiateShader->setVec3("spotLight[0].direction", spotLightDirection);
-			instantiateShader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
-			instantiateShader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(10.0f)));
-			instantiateShader->setVec3("spotLight[0].color", 1.0f, 0.0f, 0.0f);
-
-			instantiateShader->setVec3("spotLight[1].position", spotLightPosition1);
-			instantiateShader->setVec3("spotLight[1].direction", spotLightDirection1);
-			instantiateShader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
-			instantiateShader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
-			instantiateShader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
-
+			setPBRShader(ourShader);
+			setPBRShader(instantiateShader);
 		}
+		else {
+			setPhongShader(ourShader);
+			setPhongShader(instantiateShader);
+		}
+		
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, rock->textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
 		for (unsigned int i = 0; i < rock->meshes.size(); i++)
@@ -567,10 +500,9 @@ int main()
 	glDeleteBuffers(1, &buffer);
 	delete ourShader;
 	delete ourShader2;
-	//delete ourModel;
-	//delete ourModel2;
+	delete instantiateShader;
+	delete skyBoxShader;
 	root.~GraphNode();
-	//delete mesh;
 	// optional: de-allocate all resources once they've outlived their purpose:
 	// ------------------------------------------------------------------------
 
@@ -670,4 +602,76 @@ unsigned int loadCubemap(vector<std::string> faces)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
+}
+
+void setPBRShader(Shader *shader) {
+	shader->use();
+	
+	shader->setVec3("camPos", camera.Position);
+
+	shader->setFloat("ao", ao);
+	shader->setFloat("metallic", metallines);
+	shader->setFloat("roughness", roughness);
+	shader->setFloat("reflectionStrength", reflectionStrength);
+	shader->setFloat("refraction", refraction);
+
+	shader->setVec3("pointLight.color", lightDiffuse);
+	shader->setVec3("pointLight.position", lightPosition);
+	shader->setBool("pointLight.enabled", pointLightEnabled);
+
+	shader->setVec3("dirLight.direction", lightDirection);
+	shader->setVec3("dirLight.color", lightAmbient);
+	shader->setFloat("dirLight.lightStrength", dirLightStrenght);
+	shader->setBool("dirLight.enabled", dirLightEnabled);
+
+	shader->setVec3("spotLight[0].position", spotLightPosition);
+	shader->setVec3("spotLight[0].direction", spotLightDirection);
+	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(8.0f)));
+	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(10.0f)));
+	shader->setVec3("spotLight[0].color", 1.0f, 0.0f, 0.0f);
+	shader->setBool("spotLight[0].enabled", spotLightEnabled);
+	shader->setVec3("spotLight[1].position", spotLightPosition1);
+	shader->setVec3("spotLight[1].direction", spotLightDirection1);
+	shader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
+	shader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
+	shader->setVec3("spotLight[1].color", 0.0f, 0.0f, 1.0f);
+	shader->setBool("spotLight[1].enabled", spotLightEnabled1);
+}
+
+void setPhongShader(Shader *shader) {
+	shader->use();
+	shader->setVec3("dirLight.ambient", lightAmbient);
+	shader->setVec3("dirLight.diffuse", lightDiffuse);
+	shader->setVec3("dirLight.specular", lightSpecular);
+	shader->setVec3("dirLight.direction", -lightDirection);
+
+	shader->setVec3("pointLight.position", lightPosition);
+	shader->setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("pointLight.constant", 1.0f);
+	shader->setFloat("pointLight.linear", 0.09f);
+	shader->setFloat("pointLight.quadratic", 0.032f);
+
+	shader->setVec3("spotLight[0].position", spotLightPosition);
+	shader->setVec3("spotLight[0].direction", spotLightDirection);
+	shader->setFloat("spotLight[0].cutOff", glm::cos(glm::radians(12.0f)));
+	shader->setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(16.0f)));
+	shader->setVec3("spotLight[0].ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("spotLight[0].diffuse", 0.8f, 0.0f, 0.0f);
+	shader->setVec3("spotLight[0].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("spotLight[0].constant", 1.0f);
+	shader->setFloat("spotLight[0].linear", 0.09f);
+	shader->setFloat("spotLight[0].quadratic", 0.032f);
+
+	shader->setVec3("spotLight[1].position", spotLightPosition1);
+	shader->setVec3("spotLight[1].direction", spotLightDirection1);
+	shader->setFloat("spotLight[1].cutOff", glm::cos(glm::radians(12.0f)));
+	shader->setFloat("spotLight[1].outerCutOff", glm::cos(glm::radians(16.0f)));
+	shader->setVec3("spotLight[1].ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("spotLight[1].diffuse", 0.0f, 0.8f, 0.0f);
+	shader->setVec3("spotLight[1].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("spotLight[1].constant", 1.0f);
+	shader->setFloat("spotLight[1].linear", 0.09f);
+	shader->setFloat("spotLight[1].quadratic", 0.032f);
 }

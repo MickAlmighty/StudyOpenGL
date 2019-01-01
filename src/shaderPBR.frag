@@ -18,12 +18,14 @@ uniform float refraction;
 struct PointLight {
     vec3 position;
     vec3 color;
+    bool enabled;
 };
 
 struct DirLight {
     vec3 direction;
     vec3 color;
     float lightStrength;
+    bool enabled;
 };
 
 struct SpotLight{
@@ -32,6 +34,7 @@ struct SpotLight{
     float cutOff;
     float outerCutOff;
     vec3 color; 
+    bool enabled;
 };
 uniform PointLight pointLight;
 uniform DirLight dirLight;
@@ -53,6 +56,7 @@ void main()
 {
     vec3 albedo  = vec3(texture(texture_diffuse1, TexCoords));
     vec3 N = normalize(Normal);
+    //vec3 N = Normal;
     vec3 V = normalize(camPos - FragPos);
     vec3 I = normalize(FragPos - camPos);
 
@@ -71,142 +75,138 @@ void main()
     FragColor = vec4(color, 1.0);
 }
 
-vec3 calculateReflection(vec3 N, vec3 I)
-{
-    
-    vec3 R = reflect(I, N);
-    vec3 skyboxReflect = texture(skybox, R).rgb * reflectionStrength;
-    return skyboxReflect;
-}
 
-vec3 calculateRefraction(vec3 N, vec3 I)
-{
-    float ratio = 1.00 / refraction;
-    vec3 R = refract(I, N, ratio);
-    vec3 skyboxRefract;
-    if(refraction != 0.0f)
-        skyboxRefract = texture(skybox, R).rgb;
-    else
-        skyboxRefract = vec3(0);
-    return skyboxRefract;
-}
 vec3 calculateSpotLight(vec3 albedo, vec3 N, vec3 V, SpotLight light)
 {
-    vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
-
-    // równanie odbicia
-    vec3 Lo = vec3(0.0);
-    // obliczy radiancję per-światło
-    vec3 L = normalize(light.position - FragPos);
-    vec3 H = normalize(V + L);
     
-    float distance    = length(light.position - FragPos);
-    float attenuation = 1.0 / (distance * distance);
-    vec3 radiance     = light.color * attenuation;        
+    if(light.enabled)
+    {
+        vec3 F0 = vec3(0.04); 
+        F0 = mix(F0, albedo, metallic);
 
-    // cook-torrance brdf
-    float NDF = DistributionGGX(N, H, roughness);
-    float NdotV = max(dot(N,V),0);
-    float G   = GeometrySchlickGGX(NdotV, roughness);             
-    //float G   = GeometrySmith(N, V, L, roughness);      
-    vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
+        // równanie odbicia
+        vec3 Lo = vec3(0.0);
+        // obliczy radiancję per-światło
+        vec3 L = normalize(light.position - FragPos);
+        vec3 H = normalize(V + L);
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;	  
+        float distance    = length(light.position - FragPos);
+        float attenuation = 1.0 / (distance * distance);
+        vec3 radiance     = light.color * attenuation;        
 
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);  
+        // cook-torrance brdf
+        float NDF = DistributionGGX(N, H, roughness);
+        float NdotV = max(dot(N,V),0);
+        float G   = GeometrySchlickGGX(NdotV, roughness);             
+        //float G   = GeometrySmith(N, V, L, roughness);      
+        vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
 
-    // dodaj do wynikowej radiancji Lo
-    float NdotL = max(dot(N, L), 0.0);                
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;	  
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
+        vec3 numerator    = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+        vec3 specular     = numerator / max(denominator, 0.001);  
 
-    //spotlight (miękkie krawędzie)
-    float theta = dot(L, normalize(-light.direction)); 
-    float epsilon = (light.cutOff - light.outerCutOff);
-    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
-    color *= intensity;
-    return color;
+        // dodaj do wynikowej radiancji Lo
+        float NdotL = max(dot(N, L), 0.0);                
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
+
+        vec3 ambient = vec3(0.03) * albedo * ao;
+        vec3 color = ambient + Lo;
+
+        //spotlight (miękkie krawędzie)
+        float theta = dot(L, normalize(-light.direction)); 
+        float epsilon = (light.cutOff - light.outerCutOff);
+        float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+        color *= intensity;
+        return color;
+    }
+    return vec3(0);
+    
 }
 
 vec3 calculatePointLight(vec3 albedo, vec3 N, vec3 V)
 {
-    vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
+    if(pointLight.enabled)
+    {
+        vec3 F0 = vec3(0.04); 
+        F0 = mix(F0, albedo, metallic);
 
-    // równanie odbicia
-    vec3 Lo = vec3(0.0);
-    // obliczy radiancję per-światło
-    vec3 L = normalize(pointLight.position - FragPos);
-    vec3 H = normalize(V + L);
-    float distance    = length(pointLight.position - FragPos);
-    float attenuation = 1.0 / (distance * distance);
-    vec3 radiance     = pointLight.color * attenuation;        
+        // równanie odbicia
+        vec3 Lo = vec3(0.0);
+        // obliczy radiancję per-światło
+        vec3 L = normalize(pointLight.position - FragPos);
+        vec3 H = normalize(V + L);
+        float distance    = length(pointLight.position - FragPos);
+        float attenuation = 1.0 / (distance * distance);
+        vec3 radiance     = pointLight.color * attenuation;        
 
-    // cook-torrance brdf
-    float NDF = DistributionGGX(N, H, roughness);
-    float NdotV = max(dot(N,V),0);
-    float G   = GeometrySchlickGGX(NdotV, roughness);             
-    //float G   = GeometrySmith(N, V, L, roughness);      
-    vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
+        // cook-torrance brdf
+        float NDF = DistributionGGX(N, H, roughness);
+        float NdotV = max(dot(N,V),0);
+        float G   = GeometrySchlickGGX(NdotV, roughness);             
+        //float G   = GeometrySmith(N, V, L, roughness);      
+        vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;	  
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;	  
 
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);  
+        vec3 numerator    = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+        vec3 specular     = numerator / max(denominator, 0.001);  
 
-    // dodaj do wynikowej radiancji Lo
-    float NdotL = max(dot(N, L), 0.0);                
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
+        // dodaj do wynikowej radiancji Lo
+        float NdotL = max(dot(N, L), 0.0);                
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
-    return color;
+        vec3 ambient = vec3(0.03) * albedo * ao;
+        vec3 color = ambient + Lo;
+        return color;
+    }
+    return vec3(0);
 }
 
 vec3 calculateDirLight(vec3 albedo, vec3 N, vec3 V)
 {
-    vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
+    if(dirLight.enabled)
+    {
+        vec3 F0 = vec3(0.04); 
+        F0 = mix(F0, albedo, metallic);
 
-    // równanie odbicia
-    vec3 Lo = vec3(0.0);
-    // obliczy radiancję per-światło
-    vec3 L = normalize(dirLight.direction); //kierunek, z którego pada światło
-    vec3 H = normalize(V + L);
-    vec3 radiance     = dirLight.color * dirLight.lightStrength;        
+        // równanie odbicia
+        vec3 Lo = vec3(0.0);
+        // obliczy radiancję per-światło
+        vec3 L = normalize(dirLight.direction); //kierunek, z którego pada światło
+        vec3 H = normalize(V + L);
+        vec3 radiance = dirLight.color * dirLight.lightStrength;        
 
-    // cook-torrance brdf
-    float NDF = DistributionGGX(N, H, roughness);
-    float NdotV = max(dot(N,V),0);
-    float G   = GeometrySchlickGGX(NdotV, roughness);             
-    //float G   = GeometrySmith(N, V, L, roughness);      
-    vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
+        // cook-torrance brdf
+        float NDF = DistributionGGX(N, H, roughness);
+        float NdotV = max(dot(N,V),0);
+        float G   = GeometrySchlickGGX(NdotV, roughness);             
+        //float G   = GeometrySmith(N, V, L, roughness);      
+        vec3 F    = fresnelSchlickRoughness(max(dot(H, V), 0.0), F0);       
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;	  
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;	  
 
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);  
+        vec3 numerator    = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+        vec3 specular     = numerator / max(denominator, 0.001);  
 
-    // dodaj do wynikowej radiancji Lo
-    float NdotL = max(dot(N, L), 0.0);                
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
+        // dodaj do wynikowej radiancji Lo
+        float NdotL = max(dot(N, L), 0.0);                
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
-    return color; 
+        vec3 ambient = vec3(0.03) * albedo * ao;
+        vec3 color = ambient + Lo;
+        return color; 
+    }
+    return vec3(0);
 }
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)
@@ -249,4 +249,23 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     float ggx1  = GeometrySchlickGGX(NdotL, roughness);
 
     return ggx1 * ggx2;
+}
+
+vec3 calculateReflection(vec3 N, vec3 I)
+{
+    vec3 R = reflect(I, N);
+    vec3 skyboxReflect = texture(skybox, R).rgb * reflectionStrength;
+    return skyboxReflect;
+}
+
+vec3 calculateRefraction(vec3 N, vec3 I)
+{
+    float ratio = 1.00 / refraction;
+    vec3 R = refract(I, N, ratio);
+    vec3 skyboxRefract;
+    if(refraction != 0.0f)
+        skyboxRefract = texture(skybox, R).rgb;
+    else
+        skyboxRefract = vec3(0);
+    return skyboxRefract;
 }
